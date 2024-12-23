@@ -2,9 +2,10 @@ import os
 from typing import List, Dict, Any, Optional
 import chromadb
 import streamlit as st
+import numpy as np
 from sentence_transformers import SentenceTransformer
 from chromadb.api.models.Collection import Collection
-from chromadb.utils import embedding_functions
+from get_context_online import get_online_context
 
 class DocumentStore:
     
@@ -87,7 +88,8 @@ class DocumentStore:
         self,
         query: str,
         collection_name,
-        top_k: int = 2
+        top_k: int = 2,
+        # threshold: float = 0.3  # We'll use this as a similarity threshold
     ) -> List[str]:
         """
         Retrieve relevant document chunks for a given query.
@@ -96,6 +98,7 @@ class DocumentStore:
             query (str): User query
             collection_name (str): Name of the collection
             top_k (int): Number of results to retrieve
+            threshold (float): Minimum similarity threshold (0 to 1, higher is better)
             
         Returns:
             List[str]: List of relevant text chunks
@@ -120,6 +123,7 @@ class DocumentStore:
             st.error(f"Error retrieving relevant chunks: {str(e)}")
             raise
 
+        
     def clear_collection(self, collection_name: str = "document_embeddings") -> None:
         """
         Clear all documents from a collection.
@@ -160,7 +164,7 @@ def store_document_chunks(chunks: List[str]) -> None:
     elif st.session_state.language == "Vietnamese":
         doc_store.store_embeddings(chunks, collection_name="document_embeddings_vi")
 
-def get_relevant_chunks(query: str, top_k: int = 2) -> List[str]:
+def get_relevant_chunks(query: str, top_k: int = 1) -> List[str]:  # Increased top_k to 3
     """
     Get relevant chunks for a query.
     
@@ -173,6 +177,16 @@ def get_relevant_chunks(query: str, top_k: int = 2) -> List[str]:
     """
     doc_store = initialize_document_store()
     if st.session_state.language == "English":
-        return doc_store.retrieve_relevant_chunks(query, collection_name="document_embeddings_en", top_k=top_k)
-    elif st.session_state.language =="Vietnamese":
-        return doc_store.retrieve_relevant_chunks(query, collection_name="document_embeddings_vi", top_k=top_k)
+        return doc_store.retrieve_relevant_chunks(
+            query, 
+            collection_name="document_embeddings_en", 
+            top_k=top_k,
+            #threshold=0.0  # Adjust threshold as needed
+        )
+    elif st.session_state.language == "Vietnamese":
+        return doc_store.retrieve_relevant_chunks(
+            query, 
+            collection_name="document_embeddings_vi", 
+            top_k=top_k,
+            #threshold=0.0  # Adjust threshold as needed
+        )

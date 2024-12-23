@@ -26,15 +26,16 @@ from sentence_transformers import SentenceTransformer
 # print(relevant_chunks)
 ollama = Ollama(
     base_url="http://localhost:11434",
-    model="llama3.2Q80:latest"
+    model="llama3.2Q5KM:latest"
 )
-test_prompt = "tách từ trong xử lí ngôn ngữ tự nhiên là gì? hãy trả lời chi tiết nhất có thể"
+#test_prompt = "tách từ trong xử lí ngôn ngữ tự nhiên là gì? hãy trả lời chi tiết nhất có thể"
+test_prompt = """đại tướng võ nguyên giáp của việt nam là ai?"""
 response = ollama.generate(
         prompts=[test_prompt],
         generation_config={
             'max_tokens': 4096,        # Increase max output length
-            'temperature': 0.7,        # Add some randomness
-            'top_p': 0.9,             # Nucleus sampling
+            'temperature': 0.9,        # Add some randomness
+            'top_p': 0.3,             # Nucleus sampling
             'num_predict': 1024,       # Number of tokens to predict
             'stop': ['\n\n\n'],       # Stop sequence
             'repeat_penalty': 1.1,     # Reduce repetition

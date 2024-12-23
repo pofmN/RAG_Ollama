@@ -1,4 +1,5 @@
 import streamlit as st
+import  streamlit_toggle as tog
 from streamlit_chat import message
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.llms import Ollama
@@ -8,6 +9,7 @@ import docx
 from storage import store_document_chunks, get_relevant_chunks
 import io
 import hashlib
+from get_context_online import get_online_context
 
 # Page configuration
 st.set_page_config(
@@ -154,6 +156,17 @@ else:
     with col2:
         st.warning("⚠️ Please upload a document to begin")
 
+with col2:
+    st.session_state.use_internet = tog.st_toggle_switch(
+        label="Use Internet for Online Search",
+        key="use_internet_toggle",
+        default_value=True,
+        label_after=False,
+        inactive_color="#D3D3D3",
+        active_color="#11567f",
+        track_color="#29B5E8"
+    )
+
 # Chat interface
 st.markdown("---")
 st.subheader("💬 Chat Interface")
@@ -174,28 +187,28 @@ if prompt := st.chat_input("Ask a question about your document..."):
     try:
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                # Get relevant chunks
-                relevant_chunks = get_relevant_chunks(prompt)
-                context = "\n".join(relevant_chunks)
+                if st.session_state.processed_files:
+                    relevant_chunks = get_relevant_chunks(prompt)
+                    context = "\n".join(relevant_chunks)
+                else:
+                    context = get_online_context(prompt)
                 
                 # Prepare prompt based on language
                 if st.session_state.language == "English":
                     enhanced_prompt = f"""Please use the following context: {context}
-                    to answer the following question: {prompt}
-                    as detailed as possible."""
+                    to answer the following question: {prompt} as detailed as possible."""
                 else:
-                    enhanced_prompt = f"""Hãy dựa trên ngữ cảnh sau: {context}
-                     để trả lời câu hỏi: {prompt}
-                     chi tiết nhất có thể."""
+                    enhanced_prompt = f"""Bạn là một nhà khoa học có thể trả lời mọi câu hỏi, dựa trên những thông tin sau: {context}
+                    để trả lời câu hỏi {prompt} chi tiết và dài nhất có thể. chú ý chỉ tập trung sử dụng context để trả lời câu hỏi, không nhắc lại những yêu cầu của tôi đối với câu hỏi"""
 
                 # Generate response
-                print("PROMT IS: "+enhanced_prompt)
+                print("PROMT IS: " + enhanced_prompt)
                 response = ollama.generate(
                     prompts=[enhanced_prompt],
                     generation_config={
-                        'max_tokens': 4096,
-                        'temperature': 0.7,
-                        'top_p': 0.9,
+                        'max_tokens': 8192,
+                        'temperature': 0.9,
+                        'top_p': 0.2,
                         'num_predict': 1024,
                         'stop': ['\n\n\n'],
                         'repeat_penalty': 1.1,
@@ -203,6 +216,7 @@ if prompt := st.chat_input("Ask a question about your document..."):
                 )
                 
                 assistant_response = response.generations[0][0].text
+                print("Answer is: "+assistant_response)
                 st.markdown(assistant_response)
                 
                 # Add to chat history
